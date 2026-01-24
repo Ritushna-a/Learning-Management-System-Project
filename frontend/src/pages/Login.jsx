@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { loginUserApi } from "../services/api";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import logo from "../assets/logo.png";
 
 
@@ -30,14 +32,15 @@ const Login = () => {
       return;
     }
 
+    const toastId = toast.loading("Signing in...");
     setLoading(true);
     try {
-      console.log("Login data:", formData);
-
-      toast.success("Logged in successfully!");
+      const res = await loginUserApi(formData); 
+      localStorage.setItem("token", res.data.token);
+      toast.success("Logged in successfully!",{ is: toastId});
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Login failed");
+      toast.error(err?.response?.data?.message || "Login failed", { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -54,7 +57,18 @@ const Login = () => {
             />
           </div>
 
+            <h2 className="text-2xl font-bold text-center text-gray-900">
+          Hello, Welcome Back!
+        </h2>
+        <p className="text-center text-gray-500 mb-6">
+          Login with your credentials.
+        </p>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Username
+            </label>
           <input
             type="text"
             name="emailOrUsername"
@@ -63,29 +77,38 @@ const Login = () => {
             onChange={handleChange}
             className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
           />
+          </div>
 
-          <div className="relative">
-            <input
-              type={showPass ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-3 text-sm text-indigo-600"
-            >
-              {showPass ? "Hide" : "Show"}
-            </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <div className="relative">
+             <input
+               type={showPass ? "text" : "password"}
+               name="password"
+               placeholder="Password"
+               value={formData.password}
+               onChange={handleChange}
+               className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
+              />
+              <button
+               type="button"
+               onClick={() => setShowPass((prev) =>!prev)}
+               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+              >
+              {showPass ?  <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="text-right">
-            <span className="text-sm text-indigo-600 hover:underline cursor-pointer">
-              Forgot password?
-            </span>
+              <button
+                type="button"
+                onClick={() => navigate("/forgotpassword")}
+                className="text-sm text-indigo-600 hover:underline">
+                Forgot password?
+              </button>
           </div>
 
           <button
