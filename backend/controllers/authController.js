@@ -1,6 +1,8 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { Op } = require("sequelize");
+const { sendEmail } = require("../helpers/emailHelper");
 
 const registerUser = async (req, res) => {
   try {
@@ -14,134 +16,161 @@ const registerUser = async (req, res) => {
       role,
     } = req.body;
 
-    const userRole = role || "student"; 
-
     if (!username || !email || !password || !phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "All required fields must be filled",
-      });
+      return res.status(400).json({ message: "All required fields must be filled" });
     }
 
     if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Passwords do not match",
-      });
+      return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const emailExists = await User.findOne({ where: { email } });
-    if (emailExists) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered",
-      });
-    }
+    const existingUser = await User.findOne({
+      where: { [Op.or]: [{ email }, { username }] },
+    });
 
-    const usernameExists = await User.findOne({ where: { username } });
-    if (usernameExists) {
-      return res.status(409).json({
-        success: false,
-        message: "Username already taken",
-      });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email or username already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({
+    await User.create({
       username,
       email,
       password: hashedPassword,
       address,
       phoneNumber,
-      role: userRole,
+      role: role || "student",
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: {
-        id: newUser.user_id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
+    res.status(201).json({ success: true, message: "User registered successfully" });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Registration failed",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Registration failed", error: error.message });
   }
 };
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
-    }
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { email: emailOrUsername },
+          { username: emailOrUsername },
+        ],
+      },
+    });
 
-    const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    if (user.is_active === false) {
-      return res.status(403).json({
-        success: false,
-        message: "Account is deactivated",
-      });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+    if (!user.is_active) {
+      return res.status(403).json({ message: "Account disabled" });
     }
 
     const token = jwt.sign(
       {
         id: user.user_id,
         role: user.role,
-        email: user.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    return res.status(200).json({
+    res.json({
       success: true,
-      message: "Login successful",
       token,
+      user: {
+        id: user.user_id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Login failed",
-      error: error.message,
+    res.status(500).json({ message: "Login failed" });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.json({
+        success: true,
+        message: "If this email exists, a reset link has been sent",
+      });
+    }
+
+    const resetToken = jwt.sign(
+      { id: user.user_id, type: "reset" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const resetLink = `http://localhost:5173/resetpassword/${resetToken}`;
+
+    await sendEmail(
+      user.email,
+      "Reset your password",
+      `Click the link below to reset your password:\n\n${resetLink}`
+    );
+
+    res.json({
+      success: true,
+      message: "If this email exists, a reset link has been sent",
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Email sending failed" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.type !== "reset") {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await user.update({ password: hashedPassword });
+
+    res.json({ success: true, message: "Password reset successful" });
+  } catch (error) {
+    res.status(400).json({ message: "Invalid or expired token" });
   }
 };
 
 module.exports = {
-  loginUser,
   registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
 };
