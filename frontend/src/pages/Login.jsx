@@ -5,7 +5,6 @@ import { loginUserApi } from "../services/api";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import logo from "../assets/logo.png";
 
-
 const Login = () => {
   const navigate = useNavigate();
 
@@ -34,13 +33,36 @@ const Login = () => {
 
     const toastId = toast.loading("Signing in...");
     setLoading(true);
+
     try {
-      const res = await loginUserApi(formData); 
+      const payload = {
+        emailOrUsername: formData.emailOrUsername.trim(),
+        password: formData.password,
+      };
+
+      const res = await loginUserApi(payload);
+
       localStorage.setItem("token", res.data.token);
-      toast.success("Logged in successfully!",{ is: toastId});
-      navigate("/dashboard");
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      window.dispatchEvent(new Event("userUpdated"));
+
+      if (res.data.user.role === "student") {
+        navigate("/studentdashboard");
+      } else if (res.data.user.role === "instructor") {
+        navigate("/instructordashboard");
+      } else {
+        toast.error("Unauthorized role", { id: toastId });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        return;
+      }
+
+      toast.success("Logged in successfully!", { id: toastId });
     } catch (error) {
-      toast.error(err?.response?.data?.message || "Login failed", { id: toastId });
+      toast.error(
+        error?.response?.data?.message || "Login failed",
+        { id: toastId }
+      );
     } finally {
       setLoading(false);
     }
@@ -48,16 +70,16 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-300 p-5">
-          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-lg">
-            <div className="flex justify-center mb-4">
-            <img
-              src={logo}
-              alt="Logo"
-              className="h-16 w-auto"
-            />
-          </div>
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-lg">
+        <div className="flex justify-center mb-4">
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-16 w-auto"
+          />
+        </div>
 
-            <h2 className="text-2xl font-bold text-center text-gray-900">
+        <h2 className="text-2xl font-bold text-center text-gray-900">
           Hello, Welcome Back!
         </h2>
         <p className="text-center text-gray-500 mb-6">
@@ -69,14 +91,14 @@ const Login = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
-          <input
-            type="text"
-            name="emailOrUsername"
-            placeholder="Email or Username"
-            value={formData.emailOrUsername}
-            onChange={handleChange}
-            className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
-          />
+            <input
+              type="text"
+              name="emailOrUsername"
+              placeholder="Email or Username"
+              value={formData.emailOrUsername}
+              onChange={handleChange}
+              className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
+            />
           </div>
 
           <div>
@@ -84,31 +106,32 @@ const Login = () => {
               Password
             </label>
             <div className="relative">
-             <input
-               type={showPass ? "text" : "password"}
-               name="password"
-               placeholder="Password"
-               value={formData.password}
-               onChange={handleChange}
-               className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
+              <input
+                type={showPass ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-400"
               />
               <button
-               type="button"
-               onClick={() => setShowPass((prev) =>!prev)}
-               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                type="button"
+                onClick={() => setShowPass((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
               >
-              {showPass ?  <FiEyeOff size={18} /> : <FiEye size={18} />}
+                {showPass ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
             </div>
           </div>
 
           <div className="text-right">
-              <button
-                type="button"
-                onClick={() => navigate("/forgotpassword")}
-                className="text-sm text-indigo-600 hover:underline">
-                Forgot password?
-              </button>
+            <button
+              type="button"
+              onClick={() => navigate("/forgotpassword")}
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <button
