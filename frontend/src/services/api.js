@@ -29,3 +29,8 @@ export const resetPasswordApi = (data) => Api.post(`/api/user/resetpassword`, da
 
 export const getProfileApi = () => Api.get("/api/user/profile", authConfig());
 export const updateProfileApi = (data) => ApiFormData.put("/api/user/profile", data, authConfig());
+export const getAllStudentsApi = () => Api.get("/api/user/students", authConfig());
+
+export const createCourseApi = (data) => Api.post("/api/course", data, authConfig());
+export const getCoursesApi = () => Api.get("/api/course", authConfig());
+export const deleteCourseApi = (id) => Api.delete(`/api/course/${id}`, authConfig());
