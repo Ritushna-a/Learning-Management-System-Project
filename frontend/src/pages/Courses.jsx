@@ -9,7 +9,6 @@ import StudentDashCard from "../component/StudentDashCard";
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
-  
   const [enrolledCourses, setEnrolledCourses] = useState(() => {
     const saved = localStorage.getItem("enrolledCourses");
     return saved ? JSON.parse(saved) : [];
@@ -57,6 +56,10 @@ const Courses = () => {
     }
   };
 
+  const handleNavigate = (id) => {
+    navigate(`/course/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex gap-6 p-6">
       {role === "instructor" ? <InstructorDashCard /> : <StudentDashCard />}
@@ -66,7 +69,7 @@ const Courses = () => {
           <div className="flex justify-end mb-6">
             <Link
               to="/createcourse"
-              className="bg-black text-white px-4 py-2 rounded"
+              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
             >
               + Create Course
             </Link>
@@ -83,56 +86,55 @@ const Courses = () => {
           {courses.map((course) => (
             <div
               key={course.course_id}
-              className="bg-white shadow-md rounded-lg overflow-hidden"
+              className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition"
             >
-              {/* Thumbnail */}
               {course.thumbnail && (
                 <img
+                  onClick={() => handleNavigate(course.course_id)}
                   src={`${import.meta.env.VITE_API_BASE_URL}${course.thumbnail}`}
-                  alt="Course thumbnail"
-                  className="h-40 w-full object-cover"
+                  alt="Course Thumbnail"
+                  className="h-40 w-full object-cover cursor-pointer"
                 />
               )}
 
-              <div className="p-4 flex flex-col gap-2">
-                <h3 className="font-semibold text-lg">{course.title}</h3>
+              <div className="p-4 flex flex-col gap-3">
+                <h3
+                  onClick={() => handleNavigate(course.course_id)}
+                  className="font-semibold text-lg hover:text-blue-600 cursor-pointer"
+                >
+                  {course.title}
+                </h3>
 
-                <p className="text-gray-600 text-sm line-clamp-3">
-                  {course.description}
-                </p>
+                <p className="text-gray-600 text-sm line-clamp-3">{course.description}</p>
 
                 {role === "instructor" ? (
                   <div className="flex gap-2 mt-3">
                     <Link
                       to={`/createcourse/${course.course_id}`}
-                      className="flex-1 text-center bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                      className="flex-1 text-center bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition text-sm"
                     >
                       Edit
                     </Link>
 
                     <button
                       onClick={() => handleDelete(course.course_id)}
-                      className="flex-1 text-center bg-red-500 text-white px-3 py-1 rounded text-sm"
+                      className="flex-1 text-center bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
                     >
                       Delete
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-3 flex gap-2">
-                    {/* Student Enroll Button */}
+                  <div className="mt-3">
                     <button
                       disabled={enrolledCourses.includes(course.course_id)}
                       onClick={() => handleEnroll(course.course_id)}
-                      className={`flex-1 px-3 py-1 rounded text-sm text-white transition
-                        ${
-                          enrolledCourses.includes(course.course_id)
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-green-500 hover:bg-green-600"
-                        }`}
+                      className={`w-full px-3 py-2 rounded text-sm text-white transition ${
+                        enrolledCourses.includes(course.course_id)
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-500 hover:bg-green-600"
+                      }`}
                     >
-                      {enrolledCourses.includes(course.course_id)
-                        ? "Enrolled"
-                        : "Enroll"}
+                      {enrolledCourses.includes(course.course_id) ? "Enrolled" : "Enroll"}
                     </button>
                   </div>
                 )}
