@@ -1,10 +1,10 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../database/Database");
 
-const Course = sequelize.define(
-  "Course",
+const Lesson = sequelize.define(
+  "Lesson",
   {
-    course_id: {
+    lesson_id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
@@ -13,34 +13,19 @@ const Course = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    description: {
+    content: {
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    thumbnail: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    instructor_id: {
+    course_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
   },
   {
-    tableName: "courses",
+    tableName: "lessons",
     timestamps: true,
   }
 );
 
-const Lesson = require("./lessonModel");
-
-Course.hasMany(Lesson, {
-  foreignKey: "course_id",
-  onDelete: "CASCADE",
-});
-
-Lesson.belongsTo(Course, {
-  foreignKey: "course_id",
-});
-
-module.exports = Course;
+module.exports = Lesson;
