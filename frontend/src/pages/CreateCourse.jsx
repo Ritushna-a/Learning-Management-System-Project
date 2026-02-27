@@ -107,86 +107,121 @@ const CreateCourse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex gap-6 p-6">
-      {role === "instructor" && <InstructorDashCard />}
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row gap-8 p-4 md:p-8">
+      <aside className="w-full md:w-80 flex-shrink-0">
+        <div className="sticky top-8">
+          {role === "instructor" && <InstructorDashCard />}
+        </div>
+      </aside>
 
       <div className="flex-1">
-        <div className="p-6 bg-white rounded-lg shadow max-w-5xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">
-            {isEdit ? "Edit Course" : "Create Course"}
-          </h2>
+        <div className="max-w-4xl bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="text-2xl font-bold text-slate-900">
+              {isEdit ? "Edit Course Details" : "Create New Course"}
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+              Configure your course title, description, and cover image.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-2 space-y-4">
+          <form onSubmit={handleSubmit} className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
                 <div>
-                  <label className="block text-sm font-medium">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
                     Course Title
                   </label>
                   <input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="mt-1 p-2 border rounded w-full"
-                    placeholder="Course title"
+                    className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                    placeholder="e.g. Master React in 30 Days"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
                     Course Description
                   </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="mt-1 p-2 border rounded w-full h-28"
-                    placeholder="Course description"
+                    className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all h-44 placeholder:text-slate-400"
+                    placeholder="Provide a detailed overview of the curriculum..."
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Thumbnail
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-slate-700">
+                  Course Cover
                 </label>
-                <div className="border-2 border-dashed rounded p-4 text-center">
-                  {preview ? (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="h-40 w-full object-cover rounded mb-2"
+                <div className="relative group cursor-pointer">
+                  <div className={`border-2 border-dashed rounded-2xl h-64 flex flex-col items-center justify-center bg-slate-50 transition-all ${preview ? 'border-indigo-300' : 'border-slate-300 hover:border-indigo-400'}`}>
+                    {preview ? (
+                      <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-xs font-bold bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30">
+                            Change Image
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center p-4">
+                        <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 border border-slate-100">
+                          <span className="text-2xl text-slate-400 font-light">+</span>
+                        </div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Upload Thumbnail</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                     />
-                  ) : (
-                    <p className="text-sm text-gray-400">
-                      Upload course thumbnail
-                    </p>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailChange}
-                    className="mt-2"
-                  />
+                  </div>
                 </div>
+                <p className="text-[11px] text-slate-400 text-center uppercase font-bold tracking-tighter">
+                  Recommended size: 1280x720
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-between mt-6">
-              {isEdit && (
+            <div className="mt-10 pt-6 border-t border-slate-100 flex items-center justify-between">
+              <div>
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="text-red-500 hover:text-red-600 font-bold text-sm transition-colors flex items-center gap-2 group"
+                  >
+                    <span className="group-hover:rotate-12 transition-transform">🗑️</span> Delete Course
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-4">
                 <button
                   type="button"
-                  onClick={handleDelete}
-                  className="bg-red-600 text-white px-4 py-2 rounded"
+                  onClick={() => navigate("/courses")}
+                  className="px-6 py-2.5 text-slate-500 font-bold text-sm hover:text-slate-800 transition-colors"
                 >
-                  Delete
+                  Cancel
                 </button>
-              )}
-
-              <button
-                type="submit"
-                className="bg-black text-white px-6 py-2 rounded"
-              >
-                {isEdit ? "Save Changes" : "Create Course"}
-              </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all text-sm"
+                >
+                  {isEdit ? "Update Course" : "Create Course"}
+                </button>
+              </div>
             </div>
           </form>
         </div>

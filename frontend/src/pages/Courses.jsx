@@ -42,7 +42,6 @@ const Courses = () => {
         toast.success("Course deleted successfully");
       } else toast.error(data.message || "Delete failed");
     } catch (error) {
-      console.error("DELETE COURSE ERROR:", error);
       toast.error("Delete failed");
     }
   };
@@ -52,97 +51,146 @@ const Courses = () => {
       const updated = [...enrolledCourses, id];
       setEnrolledCourses(updated);
       localStorage.setItem("enrolledCourses", JSON.stringify(updated));
-      toast.success("You have successfully enrolled in this course!");
+      toast.success("Enrolled successfully!");
     }
   };
 
+  const handleUnenroll = (id) => {
+    if (!window.confirm("Unenroll from this course?")) return;
+    const updated = enrolledCourses.filter((courseId) => courseId !== id);
+    setEnrolledCourses(updated);
+    localStorage.setItem("enrolledCourses", JSON.stringify(updated));
+    toast.success("Unenrolled successfully.");
+  };
+
   const handleNavigate = (id) => {
+    if (role === "student" && !enrolledCourses.includes(id)) {
+      toast.error("Please enroll to view course content");
+      return;
+    }
     navigate(`/course/${id}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex gap-6 p-6">
-      {role === "instructor" ? <InstructorDashCard /> : <StudentDashCard />}
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row gap-8 p-4 md:p-8">
+      <aside className="w-full md:w-80 flex-shrink-0">
+        <div className="sticky top-8">
+          {role === "instructor" ? <InstructorDashCard /> : <StudentDashCard />}
+        </div>
+      </aside>
 
-      <div className="flex-1">
-        {role === "instructor" && (
-          <div className="flex justify-end mb-6">
+      <main className="flex-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Explore Courses</h1>
+            <p className="text-slate-500 mt-1">Enhance your skills with our latest programs.</p>
+          </div>
+
+          {role === "instructor" && (
             <Link
               to="/createcourse"
-              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
+              className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 shadow-sm transition-all active:scale-95"
             >
-              + Create Course
+              + Create New Course
             </Link>
+          )}
+        </div>
+        {courses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+            <p className="text-slate-400 font-medium">No courses found in the library.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+            {courses.map((course) => {
+              const isEnrolled = enrolledCourses.includes(course.course_id);
+              const isStudent = role === "student";
+
+              return (
+                <div
+                  key={course.course_id}
+                  className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-slate-100">
+                    {course.thumbnail && (
+                      <img
+                        onClick={() => handleNavigate(course.course_id)}
+                        src={`${import.meta.env.VITE_API_BASE_URL}${course.thumbnail}`}
+                        alt={course.title}
+                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isStudent && !isEnrolled ? "cursor-not-allowed grayscale-[40%]" : "cursor-pointer"
+                          }`}
+                      />
+                    )}
+                    {isEnrolled && isStudent && (
+                      <span className="absolute top-3 left-3 bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md shadow-lg">
+                        Enrolled
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-5">
+                    <h3
+                      onClick={() => handleNavigate(course.course_id)}
+                      className={`font-bold text-lg leading-tight mb-2 line-clamp-1 transition-colors ${isStudent && !isEnrolled
+                          ? "text-slate-400 cursor-not-allowed"
+                          : "text-slate-800 cursor-pointer group-hover:text-indigo-600"
+                        }`}
+                    >
+                      {course.title}
+                    </h3>
+
+                    <p className="text-slate-500 text-sm line-clamp-2 mb-6 h-10">
+                      {course.description}
+                    </p>
+
+                    {role === "instructor" ? (
+                      <div className="flex gap-3">
+                        <Link
+                          to={`/createcourse/${course.course_id}`}
+                          className="flex-1 text-center py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(course.course_id)}
+                          className="flex-1 text-center py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {isEnrolled ? (
+                          <>
+                            <button
+                              onClick={() => handleNavigate(course.course_id)}
+                              className="flex-[2] py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition"
+                            >
+                              Go to Course
+                            </button>
+                            <button
+                              onClick={() => handleUnenroll(course.course_id)}
+                              className="flex-1 py-2.5 text-slate-400 hover:text-red-500 text-xs font-medium transition"
+                            >
+                              Unenroll
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleEnroll(course.course_id)}
+                            className="w-full py-2.5 bg-white border-2 border-indigo-600 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200"
+                          >
+                            Enroll Now
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.length === 0 && (
-            <p className="col-span-full text-center text-gray-500">
-              No courses available
-            </p>
-          )}
-
-          {courses.map((course) => (
-            <div
-              key={course.course_id}
-              className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition"
-            >
-              {course.thumbnail && (
-                <img
-                  onClick={() => handleNavigate(course.course_id)}
-                  src={`${import.meta.env.VITE_API_BASE_URL}${course.thumbnail}`}
-                  alt="Course Thumbnail"
-                  className="h-40 w-full object-cover cursor-pointer"
-                />
-              )}
-
-              <div className="p-4 flex flex-col gap-3">
-                <h3
-                  onClick={() => handleNavigate(course.course_id)}
-                  className="font-semibold text-lg hover:text-blue-600 cursor-pointer"
-                >
-                  {course.title}
-                </h3>
-
-                <p className="text-gray-600 text-sm line-clamp-3">{course.description}</p>
-
-                {role === "instructor" ? (
-                  <div className="flex gap-2 mt-3">
-                    <Link
-                      to={`/createcourse/${course.course_id}`}
-                      className="flex-1 text-center bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition text-sm"
-                    >
-                      Edit
-                    </Link>
-
-                    <button
-                      onClick={() => handleDelete(course.course_id)}
-                      className="flex-1 text-center bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-3">
-                    <button
-                      disabled={enrolledCourses.includes(course.course_id)}
-                      onClick={() => handleEnroll(course.course_id)}
-                      className={`w-full px-3 py-2 rounded text-sm text-white transition ${
-                        enrolledCourses.includes(course.course_id)
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-green-500 hover:bg-green-600"
-                      }`}
-                    >
-                      {enrolledCourses.includes(course.course_id) ? "Enrolled" : "Enroll"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
