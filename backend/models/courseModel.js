@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../database/Database");
-
+const Assignment = require("./assignmentModel");
 const Course = sequelize.define(
   "Course",
   {
@@ -42,5 +42,8 @@ Course.hasMany(Lesson, {
 Lesson.belongsTo(Course, {
   foreignKey: "course_id",
 });
+
+Course.hasMany(Assignment, { foreignKey: "course_id", onDelete: "CASCADE" });
+Assignment.belongsTo(Course, { foreignKey: "course_id" });
 
 module.exports = Course;

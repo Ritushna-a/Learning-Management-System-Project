@@ -11,6 +11,8 @@ app.use("/uploads",express.static("uploads"));
 app.use("/api/user", require("./routes/userRoute"));
 app.use("/api/course", require("./routes/courseRoute"));
 app.use("/api/lesson", require("./routes/lessonRoute"));
+app.use("/api/assignment", require("./routes/assignmentRoute"));
+app.use("/api/submission", require("./routes/submissionRoute"));
 
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the Home page" });
