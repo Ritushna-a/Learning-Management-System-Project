@@ -1,4 +1,7 @@
 const Lesson = require("../models/lessonModel");
+const Notification = require("../models/notificationModel");
+const Course = require("../models/courseModel");
+const User = require("../models/userModel"); 
 
 const createLesson = async (req, res) => {
   try {
@@ -13,7 +16,19 @@ const createLesson = async (req, res) => {
       course_id: courseId,
     });
 
-    res.status(201).json({ success: true, lesson });
+    const course = await Course.findByPk(courseId);
+
+    const students = await User.findAll({ where: { role: 'student' } });
+    if (students.length > 0) {
+      const notifications = students.map(student => ({
+        user_id: student.user_id,
+        message: `📖 New Lesson: "${title}" added to ${course ? course.title : 'a course'}`,
+        type: 'lesson',
+        is_read: false
+      }));
+      await Notification.bulkCreate(notifications);
+    }
+    res.status(201).json({ success: true, message: "Lesson created successfully", lesson });
   } catch (error) {
     console.error("CREATE LESSON ERROR:", error);
     res.status(500).json({ success: false, message: "Lesson creation failed" });
@@ -26,7 +41,6 @@ const getLessonsByCourse = async (req, res) => {
     const lessons = await Lesson.findAll({ where: { course_id: courseId } });
     res.json({ success: true, lessons });
   } catch (error) {
-    console.error("GET LESSONS ERROR:", error);
     res.status(500).json({ success: false, message: "Failed to fetch lessons" });
   }
 };
@@ -42,7 +56,6 @@ const updateLesson = async (req, res) => {
     await lesson.update({ title, content });
     res.json({ success: true, lesson });
   } catch (error) {
-    console.error("UPDATE LESSON ERROR:", error);
     res.status(500).json({ success: false, message: "Lesson update failed" });
   }
 };
@@ -57,7 +70,6 @@ const deleteLesson = async (req, res) => {
     await lesson.destroy();
     res.json({ success: true, message: "Lesson deleted successfully" });
   } catch (error) {
-    console.error("DELETE LESSON ERROR:", error);
     res.status(500).json({ success: false, message: "Lesson deletion failed" });
   }
 };

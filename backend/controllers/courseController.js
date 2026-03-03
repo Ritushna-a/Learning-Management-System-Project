@@ -1,4 +1,7 @@
 const Course = require("../models/courseModel");
+const Notification = require("../models/notificationModel");
+const User = require("../models/userModel"); 
+
 const path = require("path");
 const fs = require("fs");
 
@@ -10,10 +13,7 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ success: false, message: "All fields required" });
     }
 
-    let thumbnailPath = null;
-    if (req.file) {
-      thumbnailPath = `/uploads/courses/${req.file.filename}`;
-    }
+    let thumbnailPath = req.file ? `/uploads/courses/${req.file.filename}` : null;
 
     const course = await Course.create({
       title,
@@ -21,6 +21,16 @@ const createCourse = async (req, res) => {
       thumbnail: thumbnailPath,
       instructor_id: req.user.user_id,
     });
+
+    const students = await User.findAll({ where: { role: 'student' } });
+    if (students.length > 0) {
+      const notifications = students.map(student => ({
+        user_id: student.user_id,
+        message: `🚀 New Course Alert: "${title}" is now available!`,
+        type: 'course'
+      }));
+      await Notification.bulkCreate(notifications);
+    }
 
     res.status(201).json({ success: true, course });
   } catch (error) {
@@ -65,6 +75,14 @@ const updateCourse = async (req, res) => {
     }
 
     await course.update({ title, description, thumbnail: thumbnailPath });
+    const students = await User.findAll({ where: { role: 'student' } });
+    const notifications = students.map(student => ({
+      user_id: student.user_id,
+      message: `Update: The course "${title}" has been updated with new content.`,
+      type: 'course'
+    }));
+    await Notification.bulkCreate(notifications);
+
     res.json({ success: true, course });
   } catch (error) {
     console.error("UPDATE COURSE ERROR:", error);

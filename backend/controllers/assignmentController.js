@@ -1,16 +1,34 @@
 const Assignment = require("../models/assignmentModel");
 const Submission = require("../models/submissionModel");
+const Notification = require("../models/notificationModel");
+const Course = require("../models/courseModel");
+const User = require("../models/userModel"); 
 const createAssignment = async (req, res) => {
   try {
     const { title, description, dueDate, courseId } = req.body;
-    const assignment = await Assignment.create({
+        const assignment = await Assignment.create({
       title,
       description,
       due_date: dueDate, 
       course_id: courseId,
     });
-    res.status(201).json({ success: true, assignment });
+
+    const course = await Course.findByPk(courseId);
+
+    const students = await User.findAll({ where: { role: 'student' } });
+    if (students.length > 0) {
+      const notifications = students.map(student => ({
+        user_id: student.user_id,
+        message: `📝 New Assignment: "${title}" in ${course ? course.title : 'Course'}. Due: ${dueDate}`,
+        type: 'assignment',
+        is_read: false
+      }));
+      await Notification.bulkCreate(notifications);
+    }
+
+    res.status(201).json({ success: true, message: "Assignment created!", assignment });
   } catch (error) {
+    console.error("Assignment Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -57,7 +75,6 @@ const getAssignmentsByCourse = async (req, res) => {
 
     res.json({ success: true, assignments });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
