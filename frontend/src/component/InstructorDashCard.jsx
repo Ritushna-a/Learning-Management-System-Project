@@ -3,8 +3,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaBook,
   FaPlusCircle,
-  FaUsers,
   FaClipboardList,
+  FaUsers,
+  FaThLarge,
   FaSignOutAlt
 } from "react-icons/fa";
 import { getUser, logout } from "../protected/Auth"; 
@@ -35,12 +36,18 @@ const InstructorDashCard = () => {
           <img src={logo} alt="Logo" className="h-10 object-contain" />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Link
-            to="/mycourses"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/mycourses")}`}
+            to="/instructordashboard"
+            className={`flex items-center gap-3 p-2 rounded ${isActive("/instructordashboard")}`}
           >
-            <FaBook /> My Courses
+            <FaThLarge /> Dashboard
+          </Link>
+          <Link
+            to="/courses"
+            className={`flex items-center gap-3 p-2 rounded ${isActive("/courses")}`}
+          >
+            <FaBook /> Courses
           </Link>
           <Link
             to="/createcourse"
@@ -48,23 +55,19 @@ const InstructorDashCard = () => {
           >
             <FaPlusCircle /> Create Course
           </Link>
-          <Link
-            to="/assignments"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/assignments")}`}
-          >
-            <FaClipboardList /> Assignments
-          </Link>
-          <Link
-            to="/createassignment"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/createassignment")}`}
-          >
-            <FaPlusCircle /> Create Assignment
-          </Link>
+      
           <Link
             to="/students"
             className={`flex items-center gap-3 p-2 rounded ${isActive("/students")}`}
           >
             <FaUsers /> Students
+          </Link>
+
+          <Link
+            to="/instructor/quizzes"
+            className={`flex items-center gap-3 p-2 rounded ${isActive("/instructor/quizzes")}`}
+          >
+            <FaClipboardList /> Quizzes
           </Link>
 
           <button

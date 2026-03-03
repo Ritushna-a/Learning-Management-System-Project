@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaHome,
@@ -13,8 +13,17 @@ import logo from "../assets/logo.png";
 const StudentDashCard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [user, setUser] = useState(
+    getUser() || { username: "Student", role: "Student" }
+  );
 
-  const user = getUser() || {};
+  useEffect(() => {
+    const handleUpdate = () =>
+      setUser(getUser() || { username: "Student", role: "Student" });
+
+    window.addEventListener("userUpdated", handleUpdate);
+    return () => window.removeEventListener("userUpdated", handleUpdate);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -28,37 +37,44 @@ const StudentDashCard = () => {
 
   return (
     <div className="w-72 bg-white rounded-lg shadow-md min-h-[600px] flex flex-col justify-between p-5">
-
       <div>
         <div className="flex justify-center mb-6">
-          <img src={logo} alt="Learnex Logo" className="h-10 object-contain" />
+          <img src={logo} alt="Logo" className="h-10 object-contain" />
         </div>
 
         <div className="flex flex-col gap-2">
           <Link
             to="/studentdashboard"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/studentdashboard")}`}
+            className={`flex items-center gap-3 p-2 rounded ${isActive(
+              "/studentdashboard"
+            )}`}
           >
             <FaHome /> Dashboard
           </Link>
 
           <Link
             to="/courses"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/courses")}`}
+            className={`flex items-center gap-3 p-2 rounded ${isActive(
+              "/courses"
+            )}`}
           >
             <FaBookOpen /> Courses
           </Link>
 
           <Link
-            to="/assignments"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/assignments")}`}
+            to="/student/quizzes"
+            className={`flex items-center gap-3 p-2 rounded ${isActive(
+              "/student/quizzes"
+            )}`}
           >
-            <FaClipboardList /> Assignments
+            <FaClipboardList /> Quizzes
           </Link>
 
           <Link
             to="/profile"
-            className={`flex items-center gap-3 p-2 rounded ${isActive("/profile")}`}
+            className={`flex items-center gap-3 p-2 rounded ${isActive(
+              "/profile"
+            )}`}
           >
             <FaUser /> Profile
           </Link>
@@ -71,27 +87,18 @@ const StudentDashCard = () => {
           </button>
         </div>
       </div>
+
       <div className="border-t pt-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-          {user?.profilePicture ? (
-            <img
-              src={
-                user.profilePicture.startsWith("http")
-                  ? user.profilePicture
-                  : `${import.meta.env.VITE_API_BASE_URL}${user.profilePicture}`
-              }
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-white font-semibold">
-              {user?.name?.charAt(0)?.toUpperCase() || "S"}
-            </span>
-          )}
+        <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-semibold">
+          {user?.username?.charAt(0)?.toUpperCase() || "S"}
         </div>
-        <div className="flex flex-col">
-          <p className="font-medium text-sm">{user?.username || "Student"}</p>
-          <p className="text-xs text-gray-500">{user?.role || "Student"}</p>
+        <div>
+          <p className="font-medium text-sm">
+            {user?.username || "Student"}
+          </p>
+          <p className="text-xs text-gray-500">
+            {user?.role || "Student"}
+          </p>
         </div>
       </div>
     </div>
