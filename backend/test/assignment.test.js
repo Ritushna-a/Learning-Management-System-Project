@@ -1,7 +1,7 @@
 const request = require("supertest");
 require("dotenv").config();
-
-const BASE_URL = `http://localhost:${process.env.PORT || 5000}`;
+const app = require("../index");
+const { sequelize } = require("../database/Database");
 
 describe("Assignment API", () => {
   let instructorToken;
@@ -9,10 +9,11 @@ describe("Assignment API", () => {
   let assignmentId;
 
   beforeAll(async () => {
+    await sequelize.sync();
     const uniqueId = Date.now();
     const instructorEmail = `assignment_instructor${uniqueId}@gmail.com`;
 
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `assignment_instructor${uniqueId}`,
@@ -23,7 +24,7 @@ describe("Assignment API", () => {
         role: "instructor",
       });
 
-    const loginRes = await request(BASE_URL)
+    const loginRes = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: instructorEmail,
@@ -32,7 +33,7 @@ describe("Assignment API", () => {
 
     instructorToken = loginRes.body.token;
 
-    const courseRes = await request(BASE_URL)
+    const courseRes = await request(app)
       .post("/api/course")
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -44,7 +45,7 @@ describe("Assignment API", () => {
   });
 
   it("should create assignment successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/assignment")
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -62,7 +63,7 @@ describe("Assignment API", () => {
   });
 
   it("should fetch single assignment successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .get(`/api/assignment/single/${assignmentId}`)
       .set("Authorization", `Bearer ${instructorToken}`);
 
@@ -72,7 +73,7 @@ describe("Assignment API", () => {
   });
 
   it("should update assignment successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .put(`/api/assignment/${assignmentId}`)
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -87,7 +88,7 @@ describe("Assignment API", () => {
   });
 
   it("should delete assignment successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .delete(`/api/assignment/${assignmentId}`)
       .set("Authorization", `Bearer ${instructorToken}`);
 

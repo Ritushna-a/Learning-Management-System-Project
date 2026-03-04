@@ -1,17 +1,18 @@
 const request = require("supertest");
 require("dotenv").config();
-
-const BASE_URL = `http://localhost:${process.env.PORT || 5000}`;
+const app = require("../index");
+const { sequelize } = require("../database/Database");
 
 describe("Course API", () => {
   let instructorToken;
   let studentToken;
 
   beforeAll(async () => {
+    await sequelize.sync();
     const uniqueId = Date.now();
 
     const instructorEmail = `instructor${uniqueId}@gmail.com`;
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `instructor${uniqueId}`,
@@ -22,7 +23,7 @@ describe("Course API", () => {
         role: "instructor",
       });
 
-    const instructorLoginRes = await request(BASE_URL)
+    const instructorLoginRes = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: instructorEmail,
@@ -31,7 +32,7 @@ describe("Course API", () => {
     instructorToken = instructorLoginRes.body.token;
 
     const studentEmail = `student${uniqueId}@gmail.com`;
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `student${uniqueId}`,
@@ -42,7 +43,7 @@ describe("Course API", () => {
         role: "student",
       });
 
-    const studentLoginRes = await request(BASE_URL)
+    const studentLoginRes = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: studentEmail,
@@ -52,7 +53,7 @@ describe("Course API", () => {
   });
 
   it("should fail creating course when user is student", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/course")
       .set("Authorization", `Bearer ${studentToken}`)
       .send({
@@ -66,7 +67,7 @@ describe("Course API", () => {
   });
 
   it("should fail creating course when fields are missing", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/course")
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -80,7 +81,7 @@ describe("Course API", () => {
   });
 
   it("should fetch courses successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .get("/api/course")
       .set("Authorization", `Bearer ${instructorToken}`);
 

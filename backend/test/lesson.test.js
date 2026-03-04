@@ -1,7 +1,7 @@
 const request = require("supertest");
 require("dotenv").config();
-
-const BASE_URL = `http://localhost:${process.env.PORT || 5000}`;
+const app = require("../index");
+const { sequelize } = require("../database/Database");
 
 describe("Lesson API", () => {
   let instructorToken;
@@ -10,10 +10,11 @@ describe("Lesson API", () => {
   let lessonId;
 
   beforeAll(async () => {
+    await sequelize.sync();
     const uniqueId = Date.now();
 
     const instructorEmail = `lesson_instructor${uniqueId}@gmail.com`;
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `lesson_instructor${uniqueId}`,
@@ -24,7 +25,7 @@ describe("Lesson API", () => {
         role: "instructor",
       });
 
-    const instructorLoginRes = await request(BASE_URL)
+    const instructorLoginRes = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: instructorEmail,
@@ -33,7 +34,7 @@ describe("Lesson API", () => {
     instructorToken = instructorLoginRes.body.token;
 
     const studentEmail = `lesson_student${uniqueId}@gmail.com`;
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `lesson_student${uniqueId}`,
@@ -44,7 +45,7 @@ describe("Lesson API", () => {
         role: "student",
       });
 
-    const studentLoginRes = await request(BASE_URL)
+    const studentLoginRes = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: studentEmail,
@@ -52,7 +53,7 @@ describe("Lesson API", () => {
       });
     studentToken = studentLoginRes.body.token;
 
-    const courseRes = await request(BASE_URL)
+    const courseRes = await request(app)
       .post("/api/course")
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -63,14 +64,14 @@ describe("Lesson API", () => {
   });
 
   it("should fail lesson fetch when token is missing", async () => {
-    const res = await request(BASE_URL).get(`/api/lesson/${courseId}`);
+    const res = await request(app).get(`/api/lesson/${courseId}`);
 
     expect(res.statusCode).toBe(401);
     expect(res.body.message).toBe("Authorization token missing");
   });
 
   it("should fail lesson creation when user is student", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/lesson")
       .set("Authorization", `Bearer ${studentToken}`)
       .send({
@@ -85,7 +86,7 @@ describe("Lesson API", () => {
   });
 
   it("should create lesson successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/lesson")
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -102,7 +103,7 @@ describe("Lesson API", () => {
   });
 
   it("should fetch lessons successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .get(`/api/lesson/${courseId}`)
       .set("Authorization", `Bearer ${instructorToken}`);
 
@@ -113,7 +114,7 @@ describe("Lesson API", () => {
   });
 
   it("should update lesson successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .put(`/api/lesson/${lessonId}`)
       .set("Authorization", `Bearer ${instructorToken}`)
       .send({
@@ -127,7 +128,7 @@ describe("Lesson API", () => {
   });
 
   it("should delete lesson successfully", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .delete(`/api/lesson/${lessonId}`)
       .set("Authorization", `Bearer ${instructorToken}`);
 

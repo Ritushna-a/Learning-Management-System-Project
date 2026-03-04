@@ -1,16 +1,17 @@
 const request = require("supertest");
 require("dotenv").config();
-
-const BASE_URL = `http://localhost:${process.env.PORT || 5000}`;
+const app = require("../index");
+const { sequelize } = require("../database/Database");
 
 describe("Login User API", () => {
   let loginEmail;
   const loginPassword = "securepassword123";
 
   beforeAll(async () => {
+    await sequelize.sync();
     loginEmail = `logintest${Date.now()}@gmail.com`;
 
-    await request(BASE_URL)
+    await request(app)
       .post("/api/user/register")
       .send({
         username: `logintest${Date.now()}`,
@@ -22,7 +23,7 @@ describe("Login User API", () => {
   });
 
   it("should login successfully with email", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: loginEmail,
@@ -36,7 +37,7 @@ describe("Login User API", () => {
   });
 
   it("should fail login with wrong password", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: loginEmail,
@@ -48,7 +49,7 @@ describe("Login User API", () => {
   });
 
   it("should fail login when user does not exist", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/login")
       .send({
         emailOrUsername: `nouser${Date.now()}@gmail.com`,

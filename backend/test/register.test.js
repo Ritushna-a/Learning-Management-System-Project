@@ -1,15 +1,19 @@
 const request = require("supertest");
 require("dotenv").config();
-
-const BASE_URL = `http://localhost:${process.env.PORT || 5000}`;
+const app = require("../index");
+const { sequelize } = require("../database/Database");
 
 describe("Register User API", () => {
+  beforeAll(async () => {
+    await sequelize.sync();
+  });
+
   it("should register a new user successfully", async () => {
     const uniqueUsername = `testuser${Date.now()}`;
     const uniqueEmail = `test${Date.now()}@gmail.com`;
     const uniquePhone = `9${Date.now()}`.slice(0, 10);
 
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/register")
       .send({
         username: uniqueUsername,
@@ -25,7 +29,7 @@ describe("Register User API", () => {
   });
 
   it("should fail when required fields are missing", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/register")
       .send({
         email: "missingfields@gmail.com",
@@ -37,7 +41,7 @@ describe("Register User API", () => {
   });
 
   it("should fail when passwords do not match", async () => {
-    const res = await request(BASE_URL)
+    const res = await request(app)
       .post("/api/user/register")
       .send({
         username: "mismatchuser",
