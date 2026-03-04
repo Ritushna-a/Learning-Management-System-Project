@@ -6,7 +6,7 @@ const app = express();
 
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
-app.use("/uploads",express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
 
 app.use("/api/user", require("./routes/userRoute"));
 app.use("/api/course", require("./routes/courseRoute"));
@@ -14,17 +14,22 @@ app.use("/api/lesson", require("./routes/lessonRoute"));
 app.use("/api/assignment", require("./routes/assignmentRoute"));
 app.use("/api/submission", require("./routes/submissionRoute"));
 app.use("/api/notification", require("./routes/notificationRoute"));
+app.use("/api/enrollment", require("./routes/enrollmentRoute"));
+app.use("/api/quiz", require("./routes/quizRoute"));
 
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the Home page" });
 });
 
-const startServer = async () => {
-  await connectDB();
-  await sequelize.sync();
-  app.listen(5000, () => {
-    console.log(`Server running on port ${5000}`);
-  });
-};
+if (process.env.NODE_ENV !== "test") {
+  const startServer = async () => {
+    await connectDB();
+    await sequelize.sync();
+    app.listen(5000, () => {
+      console.log(`Server running on port ${5000}`);
+    });
+  };
 
-startServer();
+  startServer();
+}
+module.exports = app;
