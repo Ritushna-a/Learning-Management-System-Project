@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { getCoursesApi, deleteCourseApi } from "../services/api";
+import {
+  getCoursesApi,
+  deleteCourseApi,
+  getMyEnrollmentsApi,
+  enrollInCourseApi,
+  unenrollCourseApi,
+} from "../services/api";
 import { getUserRole } from "../protected/Auth";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -9,10 +15,7 @@ import StudentDashCard from "../component/StudentDashCard";
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
-  const [enrolledCourses, setEnrolledCourses] = useState(() => {
-    const saved = localStorage.getItem("enrolledCourses");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
 
   const role = getUserRole();
   const navigate = useNavigate();
@@ -28,8 +31,48 @@ const Courses = () => {
     }
   };
 
+  const fetchEnrollments = async () => {
+    if (role !== "student") return;
+    try {
+      const { data } = await getMyEnrollmentsApi();
+      if (!data.success) return;
+
+      const ids = (data.enrollments || []).map((enrollment) => enrollment.course_id);
+      setEnrolledCourses(ids);
+    } catch (error) {
+      console.error("FETCH ENROLLMENTS ERROR:", error);
+    }
+  };
+
+  const migrateLocalEnrollments = async () => {
+    if (role !== "student") return;
+
+    const saved = localStorage.getItem("enrolledCourses");
+    const localIds = saved ? JSON.parse(saved) : [];
+    if (!Array.isArray(localIds) || localIds.length === 0) return;
+
+    for (const courseId of localIds) {
+      try {
+        await enrollInCourseApi(courseId);
+      } catch (error) {
+        if (error?.response?.status !== 409) {
+          console.error("MIGRATE ENROLLMENT ERROR:", error);
+        }
+      }
+    }
+
+    localStorage.removeItem("enrolledCourses");
+  };
+
   useEffect(() => {
-    fetchCourses();
+    const init = async () => {
+      await fetchCourses();
+      if (role === "student") {
+        await migrateLocalEnrollments();
+        await fetchEnrollments();
+      }
+    };
+    init();
   }, []);
 
   const handleDelete = async (id) => {
@@ -46,21 +89,38 @@ const Courses = () => {
     }
   };
 
-  const handleEnroll = (id) => {
-    if (!enrolledCourses.includes(id)) {
-      const updated = [...enrolledCourses, id];
-      setEnrolledCourses(updated);
-      localStorage.setItem("enrolledCourses", JSON.stringify(updated));
-      toast.success("Enrolled successfully!");
+  const handleEnroll = async (id) => {
+    try {
+      const { data } = await enrollInCourseApi(id);
+      if (data.success) {
+        setEnrolledCourses((prev) => [...new Set([...prev, id])]);
+        toast.success("Enrolled successfully!");
+      } else {
+        toast.error(data.message || "Enrollment failed");
+      }
+    } catch (error) {
+      if (error?.response?.status === 409) {
+        setEnrolledCourses((prev) => [...new Set([...prev, id])]);
+        toast("Already enrolled", { icon: "ℹ️" });
+      } else {
+        toast.error(error?.response?.data?.message || "Enrollment failed");
+      }
     }
   };
 
-  const handleUnenroll = (id) => {
+  const handleUnenroll = async (id) => {
     if (!window.confirm("Unenroll from this course?")) return;
-    const updated = enrolledCourses.filter((courseId) => courseId !== id);
-    setEnrolledCourses(updated);
-    localStorage.setItem("enrolledCourses", JSON.stringify(updated));
-    toast.success("Unenrolled successfully.");
+    try {
+      const { data } = await unenrollCourseApi(id);
+      if (data.success) {
+        setEnrolledCourses((prev) => prev.filter((courseId) => courseId !== id));
+        toast.success("Unenrolled successfully.");
+      } else {
+        toast.error(data.message || "Unenroll failed");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Unenroll failed");
+    }
   };
 
   const handleNavigate = (id) => {
